@@ -5,6 +5,12 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Résultats du 1er tour des élections présidentielles 2022 à Poitiers</title>
+		<style>
+			.resultsGraph {
+				width: 500px;
+				height: 300px;
+			}
+		</style>
 	</head>
 	<body>
 		<canvas id="shapesCanvas" class="resultsGraph"></canvas>
@@ -20,10 +26,10 @@
 
 		async function fillResultCanvasFromOpenData() {
 			
-			// on récupère les résultats des candidats
+			// 1 on récupère les résultats des candidats
 			const candidatesResultsRaw = await getCandidatesResultsFromAPI(APIEndpointUrl)
 
-			// on met en forme le tableau reçu pour qu'il soit exploitable
+			// 2 on met en forme le tableau reçu pour qu'il soit exploitable
 			const candidatesResults = []
 			const totalVotes = candidatesResultsRaw["totalVotes"]
 			for (let candidateNumber = 1; candidateNumber <= numberOfCandidates; candidateNumber++) {
@@ -34,17 +40,32 @@
 						"name" : candidatesResultsRaw[candidateNameColumnPrefix + candidateNumber],
 						"nbVotes" : currentCandidateVotes,
 						"proportionOfVotes" : proportionOfVotes,
-						"percentageOfVotes" : proportionOfVotes * 100,
+						"color" : generateCandidateColor(candidateNumber)
 					}
 				)
 			}
-			// on peut maintenant contrôler la concordance des scores avec la publication officielle de Poitiers : https://www.poitiers.fr/actualites/resultats-du-1er-tour-de-lelection-presidentielle-dans-la-ville-de-poitiers 
+			// Note: on peut maintenant contrôler la concordance des scores avec la publication officielle de Poitiers : https://www.poitiers.fr/actualites/resultats-du-1er-tour-de-lelection-presidentielle-dans-la-ville-de-poitiers 
 
-			// on affiche les résultats sur le canvas
+			// 2 on affiche les résultats sur le canvas
+			const resultsCanvas = document.getElementById('shapesCanvas');
+			const resultsCanvasCtx = resultsCanvas.getContext('2d');
 
-			// on trie le tableau de résultats
+			let nextStartXPosition = 0
+			candidatesResults.forEach(candidatesResult => {
+				const x = nextStartXPosition
+				const y = 0
+				const width = candidatesResult.proportionOfVotes * resultsCanvas.width
+				const height = resultsCanvas.height
+				resultsCanvasCtx.fillStyle = candidatesResult.color
+				// on arrondi pour avoir une séparation nette
+				resultsCanvasCtx.fillRect(Math.round(x), y, Math.round(width), height)
+				nextStartXPosition += width
+			});
+			
 
-			// on affiche la liste des résultats à côté
+			// 3 on trie le tableau de résultats
+
+			// 4 on affiche la liste des résultats à côté
 						
 
 			async function getCandidatesResultsFromAPI(endpointUrl) {
@@ -78,6 +99,13 @@
 
 				//return the first and only row
 				return electionResults.records[0].record.fields
+			}
+
+			function generateCandidateColor(candidateNumber) {
+				// pour l'instant nous n'utilisons pas l'information du numéro du candidat
+				const randomHexValue = Math.floor(Math.random()*0xffffff)
+				const randomHexValueWithLeadingZerosStr = ("000000" + randomHexValue.toString(16)).substr(-6)
+				return `#${randomHexValueWithLeadingZerosStr}`
 			}
 		}
 		fillResultCanvasFromOpenData()
