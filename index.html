@@ -15,13 +15,13 @@
 		const candidateNameColumnPrefix = "candidat_"
 
 		async function fillResultCanvasFromOpenData() {
-
 			
 			// on récupère les résultats des candidats
 			const APIEndpointUrl = "https://data.grandpoitiers.fr/api/v2/catalog/datasets/resultats_election_fichier_eirel_definitif/records"
 			const candidatesResults = getCandidatesResultsFromAPI(APIEndpointUrl)
 
 			// on met en forme le tableau reçu pour qu'il soit exploitable
+
 
 			// on affiche les résultats sur le canvas
 
@@ -40,6 +40,7 @@
 				function getQueryString(numberOfCandidates) {
 					// on contruit les éléments de requête à utiliser pour l'api (https://data.grandpoitiers.fr/api/v2/console)
 					// grâce au langage ODSQL proposé par opendatasoft : https://help.opendatasoft.com/apis/ods-explore-v2/#section/Opendatasoft-Query-Language-(ODSQL)
+					// on va pouvoir faire sum(nb_voix_n), candidat_n group_by candidat_n avec tous les candidats
 					const selectRawQueryStrings = []
 					const groupByRawQueryStrings = []
 					for (let candidateNumber = 1; candidateNumber <= numberOfCandidates; candidateNumber++) {
