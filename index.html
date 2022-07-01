@@ -11,14 +11,54 @@
 		<ul class="resultsList"></ul>
 	</body>
 	<script>
+		const nbVoteColumnPrefix = "nb_voix_"
+		const candidateNameColumnPrefix = "candidat_"
+
 		async function fillResultCanvasFromOpenData() {
 
-			// on récupère d'abord la quantité de données à obtenir
-			const datasetInformationResponse = await fetch("https://data.grandpoitiers.fr/api/v2/catalog/datasets/resultats_election_fichier_eirel_definitif")
-			const datasetInformation = await datasetInformationResponse.json()
-			const numberOfRecords = datasetInformation.dataset.metas.default.records_count
-			console.log("datasetInformation", datasetInformation)
+			
+			// on récupère les résultats des candidats
+			const APIEndpointUrl = "https://data.grandpoitiers.fr/api/v2/catalog/datasets/resultats_election_fichier_eirel_definitif/records"
+			const candidatesResults = getCandidatesResultsFromAPI(APIEndpointUrl)
+
+			// on met en forme le tableau reçu pour qu'il soit exploitable
+
+			// on affiche les résultats sur le canvas
+
+			// on trie le tableau de résultats
+
+			// on affiche la liste des résultats à côté
+						
+
+			function getCandidatesResultsFromAPI(baseUrl) {
+				// on va récupérer directement la somme des voix pour chaque candidat ainsi que le nom de chaque candidats
+				const candidatesResultsQueryString = getQueryString(getNumberOfCandidates())
+				const urlCall = `${baseUrl}?${candidatesResultsQueryString}`
+
+				console.log(urlCall)
+
+				function getQueryString(numberOfCandidates) {
+					// on contruit les éléments de requête à utiliser pour l'api (https://data.grandpoitiers.fr/api/v2/console)
+					// grâce au langage ODSQL proposé par opendatasoft : https://help.opendatasoft.com/apis/ods-explore-v2/#section/Opendatasoft-Query-Language-(ODSQL)
+					const selectRawQueryStrings = []
+					const groupByRawQueryStrings = []
+					for (let candidateNumber = 1; candidateNumber <= numberOfCandidates; candidateNumber++) {
+						selectRawQueryStrings.push(`sum(nb_voix_${candidateNumber}) as nb_voix_${candidateNumber},candidat_${candidateNumber}`)
+						groupByRawQueryStrings.push(`candidat_${candidateNumber}`)
+					}
+					const selectQueryString = encodeURI(selectRawQueryStrings.join(','))
+					const groupByQueryString = encodeURI(groupByRawQueryStrings.join(','))
+
+					return `select=${selectQueryString}&group_by=${groupByQueryString}`
+				}
+
+				
+			}
+			function getNumberOfCandidates() {
+				return 12;
+			}
 		}
 		fillResultCanvasFromOpenData()
+
 	</script>
 </html>
