@@ -11,17 +11,34 @@
 		<ul class="resultsList"></ul>
 	</body>
 	<script>
+		// paramètres
+		const APIEndpointUrl = "https://data.grandpoitiers.fr/api/v2/catalog/datasets/resultats_election_fichier_eirel_definitif/records"
 		const nbVoteColumnPrefix = "nb_voix_"
 		const candidateNameColumnPrefix = "candidat_"
+		const totalVotesColumn = "totalVotes"
+		const numberOfCandidates = 12
 
 		async function fillResultCanvasFromOpenData() {
 			
 			// on récupère les résultats des candidats
-			const APIEndpointUrl = "https://data.grandpoitiers.fr/api/v2/catalog/datasets/resultats_election_fichier_eirel_definitif/records"
-			const candidatesResults = getCandidatesResultsFromAPI(APIEndpointUrl)
+			const candidatesResultsRaw = await getCandidatesResultsFromAPI(APIEndpointUrl)
 
 			// on met en forme le tableau reçu pour qu'il soit exploitable
-
+			const candidatesResults = []
+			const totalVotes = candidatesResultsRaw["totalVotes"]
+			for (let candidateNumber = 1; candidateNumber <= numberOfCandidates; candidateNumber++) {
+				const currentCandidateVotes = candidatesResultsRaw[nbVoteColumnPrefix + candidateNumber]
+				const proportionOfVotes = currentCandidateVotes / totalVotes
+				candidatesResults.push(
+					{
+						"name" : candidatesResultsRaw[candidateNameColumnPrefix + candidateNumber],
+						"nbVotes" : currentCandidateVotes,
+						"proportionOfVotes" : proportionOfVotes,
+						"percentageOfVotes" : proportionOfVotes * 100,
+					}
+				)
+			}
+			// on peut maintenant contrôler la concordance des scores avec la publication officielle de Poitiers : https://www.poitiers.fr/actualites/resultats-du-1er-tour-de-lelection-presidentielle-dans-la-ville-de-poitiers 
 
 			// on affiche les résultats sur le canvas
 
@@ -30,33 +47,37 @@
 			// on affiche la liste des résultats à côté
 						
 
-			function getCandidatesResultsFromAPI(baseUrl) {
-				// on va récupérer directement la somme des voix pour chaque candidat ainsi que le nom de chaque candidats
-				const candidatesResultsQueryString = getQueryString(getNumberOfCandidates())
-				const urlCall = `${baseUrl}?${candidatesResultsQueryString}`
-
-				console.log(urlCall)
-
-				function getQueryString(numberOfCandidates) {
-					// on contruit les éléments de requête à utiliser pour l'api (https://data.grandpoitiers.fr/api/v2/console)
-					// grâce au langage ODSQL proposé par opendatasoft : https://help.opendatasoft.com/apis/ods-explore-v2/#section/Opendatasoft-Query-Language-(ODSQL)
-					// on va pouvoir faire sum(nb_voix_n), candidat_n group_by candidat_n avec tous les candidats
-					const selectRawQueryStrings = []
-					const groupByRawQueryStrings = []
-					for (let candidateNumber = 1; candidateNumber <= numberOfCandidates; candidateNumber++) {
-						selectRawQueryStrings.push(`sum(nb_voix_${candidateNumber}) as nb_voix_${candidateNumber},candidat_${candidateNumber}`)
-						groupByRawQueryStrings.push(`candidat_${candidateNumber}`)
-					}
-					const selectQueryString = encodeURI(selectRawQueryStrings.join(','))
-					const groupByQueryString = encodeURI(groupByRawQueryStrings.join(','))
-
-					return `select=${selectQueryString}&group_by=${groupByQueryString}`
+			async function getCandidatesResultsFromAPI(endpointUrl) {
+				// on va récupérer directement la somme des voix pour chaque candidat ainsi que le nom de chaque candidats et le total des voix
+				// grâce au langage ODSQL proposé par opendatasoft : https://help.opendatasoft.com/apis/ods-explore-v2/#section/Opendatasoft-Query-Language-(ODSQL)
+				// on va pouvoir faire sum(nb_voix_n), candidat_n group_by candidat_n avec tous les candidats
+				// et également récupérer le total des voix avec sum(nb_voix_n) + sum(nb_voix_n+1)...
+				const candidatesNamesRawQueryStrings = []
+				const candidatesVotesRawQueryStrings = []
+				const totalVotesRawQueryStrings = []
+				for (let candidateNumber = 1; candidateNumber <= numberOfCandidates; candidateNumber++) {
+					candidatesVotesRawQueryStrings.push(`sum(nb_voix_${candidateNumber}) as nb_voix_${candidateNumber}`)
+					candidatesNamesRawQueryStrings.push(`candidat_${candidateNumber}`)
+					totalVotesRawQueryStrings.push(`sum(nb_voix_${candidateNumber})`)
 				}
+				// construction du select avec les noms, nombre de voix et total des voix
+				const candidatesNamesRawQueryString = candidatesNamesRawQueryStrings.join(',')
+				const candidatesVotesRawQueryString = candidatesVotesRawQueryStrings.join(',')
+				const totalVotesRawQueryString = `${totalVotesRawQueryStrings.join('+')} as ${totalVotesColumn}`
+				const selectQueryString = encodeURIComponent(`${candidatesNamesRawQueryString},${candidatesVotesRawQueryString},${totalVotesRawQueryString}`)
 
+				// construction du group by avec les noms des candidats
+				const groupByRawQueryString = candidatesNamesRawQueryStrings.join(',')
+				const groupByQueryString = encodeURIComponent(groupByRawQueryString)
+
+				const urlCall = `${endpointUrl}?select=${selectQueryString}&group_by=${groupByQueryString}`
+				console.log(urlCall)
 				
-			}
-			function getNumberOfCandidates() {
-				return 12;
+				const electionResultsResponse = await fetch(urlCall)
+				const electionResults = await electionResultsResponse.json()
+
+				//return the first and only row
+				return electionResults.records[0].record.fields
 			}
 		}
 		fillResultCanvasFromOpenData()
