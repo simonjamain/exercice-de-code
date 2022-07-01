@@ -5,15 +5,9 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Résultats du 1er tour des élections présidentielles 2022 à Poitiers</title>
-		<style>
-			.resultsGraph {
-				width: 500px;
-				height: 300px;
-			}
-		</style>
 	</head>
 	<body>
-		<canvas id="shapesCanvas" class="resultsGraph"></canvas>
+		<canvas id="shapesCanvas" class="resultsGraph" width="900" height="200"></canvas>
 		<ul class="resultsList"></ul>
 	</body>
 	<script>
@@ -50,23 +44,26 @@
 			const resultsCanvas = document.getElementById('shapesCanvas');
 			const resultsCanvasCtx = resultsCanvas.getContext('2d');
 
-			let nextStartXPosition = 0
+			let cumulatedScore = 0
+			let lastEndXPosition = 0
 			candidatesResults.forEach(candidatesResult => {
-				const x = nextStartXPosition
+				const x = lastEndXPosition
 				const y = 0
-				const width = candidatesResult.proportionOfVotes * resultsCanvas.width
+				const width = Math.round(candidatesResult.proportionOfVotes * resultsCanvas.width)// on arrondi pour avoir une séparation nette des couleurs
 				const height = resultsCanvas.height
 				resultsCanvasCtx.fillStyle = candidatesResult.color
-				// on arrondi pour avoir une séparation nette
-				resultsCanvasCtx.fillRect(Math.round(x), y, Math.round(width), height)
-				nextStartXPosition += width
+				resultsCanvasCtx.fillRect(x, y, width, height)
+				console.log(`${x}, ${y}, ${width}, ${height}`)
+				console.log(resultsCanvas.width)
+				lastEndXPosition = x + width
+				cumulatedScore += candidatesResult.proportionOfVotes
 			});
 			
-
 			// 3 on trie le tableau de résultats
 
+
 			// 4 on affiche la liste des résultats à côté
-						
+			
 
 			async function getCandidatesResultsFromAPI(endpointUrl) {
 				// on va récupérer directement la somme des voix pour chaque candidat ainsi que le nom de chaque candidats et le total des voix
@@ -102,10 +99,8 @@
 			}
 
 			function generateCandidateColor(candidateNumber) {
-				// pour l'instant nous n'utilisons pas l'information du numéro du candidat
-				const randomHexValue = Math.floor(Math.random()*0xffffff)
-				const randomHexValueWithLeadingZerosStr = ("000000" + randomHexValue.toString(16)).substr(-6)
-				return `#${randomHexValueWithLeadingZerosStr}`
+				// methode tirée de https://stackoverflow.com/a/20129594 permettant une parfaite répartition des couleurs
+				return `hsl(${candidateNumber * 137.508},80%,50%)`;;
 			}
 		}
 		fillResultCanvasFromOpenData()
