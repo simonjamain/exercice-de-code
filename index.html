@@ -7,10 +7,18 @@
 		<title>Résultats du 1er tour des élections présidentielles 2022 à Poitiers</title>
 	</head>
 	<body>
-		<canvas id="colorCanvas" class="grapheResultats"></canvas>
-		<ul class="listeResultats"></ul>
+		<canvas id="shapesCanvas" class="resultsGraph"></canvas>
+		<ul class="resultsList"></ul>
 	</body>
 	<script>
-		
+		async function fillResultCanvasFromOpenData() {
+
+			// on récupère d'abord la quantité de données à obtenir
+			const datasetInformationResponse = await fetch("https://data.grandpoitiers.fr/api/v2/catalog/datasets/resultats_election_fichier_eirel_definitif")
+			const datasetInformation = await datasetInformationResponse.json()
+			const numberOfRecords = datasetInformation.dataset.metas.default.records_count
+			console.log("datasetInformation", datasetInformation)
+		}
+		fillResultCanvasFromOpenData()
 	</script>
 </html>
