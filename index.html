@@ -53,14 +53,12 @@
 				const height = resultsCanvas.height
 				resultsCanvasCtx.fillStyle = candidatesResult.color
 				resultsCanvasCtx.fillRect(x, y, width, height)
-				console.log(`${x}, ${y}, ${width}, ${height}`)
-				console.log(resultsCanvas.width)
 				lastEndXPosition = x + width
 				cumulatedScore += candidatesResult.proportionOfVotes
 			});
 			
 			// 3 on trie le tableau de résultats
-
+			sortedCandidatesResults = sortArray(candidatesResults, (a, b) => {return a.nbVotes < b.nbVotes})
 
 			// 4 on affiche la liste des résultats à côté
 			
@@ -89,7 +87,6 @@
 				const groupByQueryString = encodeURIComponent(groupByRawQueryString)
 
 				const urlCall = `${endpointUrl}?select=${selectQueryString}&group_by=${groupByQueryString}`
-				console.log(urlCall)
 				
 				const electionResultsResponse = await fetch(urlCall)
 				const electionResults = await electionResultsResponse.json()
@@ -102,6 +99,32 @@
 				// methode tirée de https://stackoverflow.com/a/20129594 permettant une parfaite répartition des couleurs
 				return `hsl(${candidateNumber * 137.508},80%,50%)`;;
 			}
+
+			function sortArray(arrayToSort, compareFunction) {
+				// on initialise un tableau vide qui sera trié lors de sa contruction
+				const sortedArray = []
+				arrayToSort.forEach(unsortedValue => {
+					let insertionIndex = 0
+					// on compare la valeur à entrer dans la tableau avec chaque valeur de celui-ci,
+					// dans l'ordre jusqu'a ce que la comparaison fonctionne ou jusqu'à ce que l'on arrive à la fin
+					sortedArray.every((sortedValue, sortedElementIndex) => {
+						let continueSearch = true
+						if(compareFunction(unsortedValue, sortedValue)) {
+							// la comparaison fonctionne, on prévoit d'insérer la valeur après et on continue
+							insertionIndex=sortedElementIndex + 1
+						} else {
+							// la comparaison ne fonctionne plus, on prévoit d'insérer la valeur avant et on arrête
+							insertionIndex = sortedElementIndex
+							continueSearch = false
+						}
+						return continueSearch
+					});
+					sortedArray.splice(insertionIndex, 0, unsortedValue)
+				});
+
+				return sortedArray
+			}
+				
 		}
 		fillResultCanvasFromOpenData()
 
