@@ -57,11 +57,10 @@
 				resultsCanvasCtx.fillRect(x, y, width, height)
 
 				lastEndXPosition = x + width
-			});
+			})
 			
 			// 3 on trie le tableau de résultats
 			sortedCandidatesResults = sortArray(candidatesResults, (a, b) => {return b.nbVotes - a.nbVotes})
-			console.log(sortedCandidatesResults)
 
 			// 4 on affiche la liste des résultats à côté
 			const listContainer = document.querySelector('#candidatesList')
@@ -70,9 +69,7 @@
 				candidateListItem.append(`${candidateRanking+1} - ${candidate.name} : ${(candidate.proportionOfVotes*100).toFixed(1)}%`)
 				candidateListItem.style.color = candidate.color
 				listContainer.append(candidateListItem)
-			});
-
-
+			})
 
 			async function getCandidatesResultsFromAPI(endpointUrl) {
 				// on va récupérer directement la somme des voix pour chaque candidat ainsi que le nom de chaque candidats et le total des voix
@@ -108,7 +105,7 @@
 
 			function generateCandidateColor(candidateNumber) {
 				// methode tirée de https://stackoverflow.com/a/20129594 permettant une parfaite répartition des couleurs
-				return `hsl(${candidateNumber * 137.508},80%,50%)`;;
+				return `hsl(${candidateNumber * 137.508},80%,50%)`
 			}
 
 			function sortArray(arrayToSort, compareFunction) {
@@ -129,15 +126,49 @@
 							continueSearch = false
 						}
 						return continueSearch
-					});
+					})
 					sortedArray.splice(insertionIndex, 0, unsortedValue)
-				});
+				})
 
 				return sortedArray
 			}
-				
+			console.log(getColorsDistributionFromCanvasId('shapesCanvas'))
 		}
-		fillResultCanvasFromOpenData()
+		fillResultCanvasFromOpenData("#shapesCanvas")
+
+
+		// EXO 2 : analyse d'un canvas
+		function getColorsDistributionFromCanvasId(canvasId) {
+			
+			const canvas = document.getElementById(canvasId)
+			const canvasCtx = canvas.getContext('2d')
+			const pixelsColorComponents = canvasCtx.getImageData(0, 0, canvas.width, canvas.height).data
+
+			let totalColors = pixelsColorComponents.length/4
+			const colorDistribution = []
+			for(let rgbaIndex = 0; rgbaIndex < pixelsColorComponents.length; rgbaIndex += 4) {
+				const redHexStr = ByteToHexString(pixelsColorComponents[rgbaIndex])
+				const greenHexStr = ByteToHexString(pixelsColorComponents[rgbaIndex + 1])
+				const blueHexStr = ByteToHexString(pixelsColorComponents[rgbaIndex + 2])
+				// on ignore l'alpha car pas pris en compte dans les consignes
+				const colorHexStr = `#${redHexStr}${greenHexStr}${blueHexStr}`
+
+				// si la couleur n'est pas référencée, on l'ajoute
+				let color = colorDistribution.find(colorItem => colorItem.color === colorHexStr)
+				if(color === undefined) {
+					color = {color: colorHexStr, percentage: 0}
+					colorDistribution.push(color)
+				}
+				
+				color.percentage += (1/totalColors)*100
+			}
+
+			return colorDistribution.sort((a, b) => {return b.percentage - a.percentage})
+
+			function ByteToHexString(Byte) {
+				return ("00" + Byte.toString(16)).substr(-2)
+			}
+		}
 
 	</script>
 </html>
