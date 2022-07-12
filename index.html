@@ -8,7 +8,7 @@
 	</head>
 	<body>
 		<canvas id="shapesCanvas" class="resultsGraph" width="900" height="200"></canvas>
-		<ul class="resultsList"></ul>
+		<ul id="candidatesList" class="candidatesList"></ul>
 	</body>
 	<script>
 		// paramètres
@@ -16,10 +16,11 @@
 		const nbVoteColumnPrefix = "nb_voix_"
 		const candidateNameColumnPrefix = "candidat_"
 		const totalVotesColumn = "totalVotes"
-		const numberOfCandidates = 12
+		const numberOfCandidates = 12//on fixe le nombre de candidats à l'avance, il n'y a pas vraiment de methode fiable et/ou propre pour le faire de manière automatique
 
 		async function fillResultCanvasFromOpenData() {
 			
+			// EXO 1 récupération et affichage des scores
 			// 1 on récupère les résultats des candidats
 			const candidatesResultsRaw = await getCandidatesResultsFromAPI(APIEndpointUrl)
 
@@ -41,8 +42,8 @@
 			// Note: on peut maintenant contrôler la concordance des scores avec la publication officielle de Poitiers : https://www.poitiers.fr/actualites/resultats-du-1er-tour-de-lelection-presidentielle-dans-la-ville-de-poitiers 
 
 			// 2 on affiche les résultats sur le canvas
-			const resultsCanvas = document.getElementById('shapesCanvas');
-			const resultsCanvasCtx = resultsCanvas.getContext('2d');
+			const resultsCanvas = document.getElementById('shapesCanvas')
+			const resultsCanvasCtx = resultsCanvas.getContext('2d')
 
 			let cumulatedScore = 0
 			let lastEndXPosition = 0
@@ -51,17 +52,27 @@
 				const y = 0
 				const width = Math.round(candidatesResult.proportionOfVotes * resultsCanvas.width)// on arrondi pour avoir une séparation nette des couleurs
 				const height = resultsCanvas.height
+
 				resultsCanvasCtx.fillStyle = candidatesResult.color
 				resultsCanvasCtx.fillRect(x, y, width, height)
+
 				lastEndXPosition = x + width
-				cumulatedScore += candidatesResult.proportionOfVotes
 			});
 			
 			// 3 on trie le tableau de résultats
-			sortedCandidatesResults = sortArray(candidatesResults, (a, b) => {return a.nbVotes < b.nbVotes})
+			sortedCandidatesResults = sortArray(candidatesResults, (a, b) => {return b.nbVotes - a.nbVotes})
+			console.log(sortedCandidatesResults)
 
 			// 4 on affiche la liste des résultats à côté
-			
+			const listContainer = document.querySelector('#candidatesList')
+			sortedCandidatesResults.forEach((candidate, candidateRanking) => {
+				const candidateListItem = document.createElement("li")
+				candidateListItem.append(`${candidateRanking+1} - ${candidate.name} : ${(candidate.proportionOfVotes*100).toFixed(1)}%`)
+				candidateListItem.style.color = candidate.color
+				listContainer.append(candidateListItem)
+			});
+
+
 
 			async function getCandidatesResultsFromAPI(endpointUrl) {
 				// on va récupérer directement la somme des voix pour chaque candidat ainsi que le nom de chaque candidats et le total des voix
@@ -101,7 +112,7 @@
 			}
 
 			function sortArray(arrayToSort, compareFunction) {
-				// on initialise un tableau vide qui sera trié lors de sa contruction
+				// on initialise un tableau vide qui sera trié lors de son remplissage
 				const sortedArray = []
 				arrayToSort.forEach(unsortedValue => {
 					let insertionIndex = 0
@@ -109,7 +120,7 @@
 					// dans l'ordre jusqu'a ce que la comparaison fonctionne ou jusqu'à ce que l'on arrive à la fin
 					sortedArray.every((sortedValue, sortedElementIndex) => {
 						let continueSearch = true
-						if(compareFunction(unsortedValue, sortedValue)) {
+						if(compareFunction(unsortedValue, sortedValue) > 0) {
 							// la comparaison fonctionne, on prévoit d'insérer la valeur après et on continue
 							insertionIndex=sortedElementIndex + 1
 						} else {
